@@ -16,10 +16,10 @@ class Spritesheet:
     # class for loading and parsing sprite sheets
     def __init__(self, filename):
         self.spritesheet = pg.image.load(filename).convert()
-    def get_image(self, x, y, width, height):
+    def get_image(self, x, y, width, height, scalefactor):
         image = pg.Surface((width, height))
         image.blit(self.spritesheet, (0,0), (x, y, width, height))
-        image = pg.transform.scale(image, (width // 2, height // 2))
+        image = pg.transform.scale(image, (width // scalefactor, height // scalefactor))
         return image
 class Player(Sprite):
     def __init__(self, game):
@@ -47,19 +47,19 @@ class Player(Sprite):
         self.acc = vec(0, 0)
         print("adding vecs " + str(self.vel + self.acc))
     def load_images(self):
-        self.standing_frames = [self.game.spritesheet.get_image(690, 406, 120, 201),
-                                self.game.spritesheet.get_image(614, 1063, 120, 191)
+        self.standing_frames = [self.game.spritesheet.get_image(690, 406, 120, 201, 3),
+                                self.game.spritesheet.get_image(614, 1063, 120, 191, 3)
                                 ]
         for frame in self.standing_frames:
             frame.set_colorkey(BLACK)
-        self.walk_frames_r = [self.game.spritesheet.get_image(678, 860, 120, 201),
-                                self.game.spritesheet.get_image(692, 1458, 120, 207)
+        self.walk_frames_r = [self.game.spritesheet.get_image(678, 860, 120, 201, 3),
+                                self.game.spritesheet.get_image(692, 1458, 120, 207, 3)
                                 ]
         self.walk_frames_l = []
         for frame in self.walk_frames_r:
             frame.set_colorkey(BLACK)
             self.walk_frames_l.append(pg.transform.flip(frame, True, False))
-        self.jump_frame = self.game.spritesheet.get_image(382, 763, 150, 181)
+        self.jump_frame = self.game.spritesheet.get_image(382, 763, 150, 181, 3)
         self.jump_frame.set_colorkey(BLACK)
     def update(self):
         self.animate()
@@ -68,9 +68,9 @@ class Player(Sprite):
         # print("vel " + str(self.vel))
 
         keys = pg.key.get_pressed()
-        if keys[pg.K_a]:
+        if keys[pg.K_a] or keys[pg.K_LEFT]:
             self.acc.x =  -PLAYER_ACC
-        if keys[pg.K_d]:
+        if keys[pg.K_d] or keys[pg.K_RIGHT]:
             self.acc.x = PLAYER_ACC
         # set player friction
         self.acc.x += self.vel.x * PLAYER_FRICTION
@@ -136,6 +136,7 @@ class Player(Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
 
+#space
 
 class Cloud(Sprite):
     def __init__(self, game):
@@ -171,8 +172,8 @@ class Platform(Sprite):
         self.groups = game.all_sprites, game.platforms
         Sprite.__init__(self, self.groups)
         self.game = game
-        images = [self.game.spritesheet.get_image(0, 288, 380, 94), 
-                  self.game.spritesheet.get_image(213, 1662, 201, 100)]
+        images = [self.game.spritesheet.get_image(0, 96, 380, 94, 2), 
+                  self.game.spritesheet.get_image(382, 408, 200, 100, 2)]
         self.image = random.choice(images)
         self.image.set_colorkey(BLACK)
         '''leftovers from random rectangles before images'''
@@ -181,30 +182,14 @@ class Platform(Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        if random.randrange(100) < POW_SPAWN_PCT:
+        # Spawns coins and enemies on platform
+        if random.randrange(100) < COIN_SPAWN_PCT:
             Coin(self.game, self)
+        elif random.randrange(100) < MOB2_SPAWN_PCT:
+            Mob2(self.game, self)
+            print("Mob2 is working")
 
-# class Pow(Sprite):
-#     def __init__(self, game, plat):
-#         # allows layering in LayeredUpdates sprite group
-#         self._layer = POW_LAYER
-#         # add a groups property where we can pass all instances of this object into game groups
-#         self.groups = game.all_sprites, game.powerups
-#         Sprite.__init__(self, self.groups)
-#         self.game = game
-#         self.plat = plat
-#         self.type = random.choice(['boost'])
-#         self.image = self.game.spritesheet.get_image(820, 1805, 71, 70)
-#         self.image.set_colorkey(BLACK)
-#         self.rect = self.image.get_rect()
-#         self.rect.centerx = self.plat.rect.centerx
-#         self.rect.bottom = self.plat.rect.top - 5
-#     def update(self):
-#         self.rect.bottom = self.plat.rect.top - 5
-#         # checks to see if plat is in the game's platforms group so we can kill the powerup instance
-#         if not self.game.platforms.has(self.plat):
-#             self.kill()
-
+# I made this
 class Coin(Sprite):
     def __init__(self, game, plat):
         # allows layering in LayeredUpdates sprite group
@@ -217,23 +202,59 @@ class Coin(Sprite):
         self.type = random.choice(['coin'])
         self.load_frames()
         self.image = self.turning_frames[0]
+        self.current_frame = 0
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.centerx = self.plat.rect.centerx
         self.rect.bottom = self.plat.rect.top - 5
+        self.last_update = 0
+        self.descendanim = False
     def update(self):
+        self.animate()
         self.rect.bottom = self.plat.rect.top - 5
         # checks to see if plat is in the game's platforms group so we can kill the powerup instance
         if not self.game.platforms.has(self.plat):
             self.kill()
     def load_frames(self):
-        self.turning_frames = [pg.image.load('img\coinfrontblack.jpg'),
-                                pg.image.load('img\cointurn1.jpg'),
-                                pg.image.load('img\cointurn2.jpg'),
-                                pg.image.load('img\coinside.jpg')]
+        self.turning_frames = [self.game.spritesheet.get_image(698, 1931, 84, 84, 2),
+                                self.game.spritesheet.get_image(829, 0, 66, 84, 2),
+                                self.game.spritesheet.get_image(897, 1574, 50, 84, 2),
+                                self.game.spritesheet.get_image(645, 651, 15, 84, 2)]
         for frame in self.turning_frames:
             frame.set_colorkey(BLACK)
-
+    def animate(self):
+        now = pg.time.get_ticks()
+        if self.current_frame == 3:
+            self.descendanim = True
+        if self.current_frame == 0:
+            self.descendanim = False
+        if now - self.last_update > 150:
+            self.last_update = now
+            if self.current_frame == 0 and self.descendanim == False:
+                self.current_frame = 1
+                self.image = self.turning_frames[self.current_frame]
+                self.rect.centerx = self.plat.rect.centerx + 4.5
+            elif self.current_frame == 1  and self.descendanim == False:
+                self.current_frame = 2
+                self.image = self.turning_frames[self.current_frame]
+                self.rect.centerx = self.plat.rect.centerx + 8.5
+            elif self.current_frame == 2  and self.descendanim == False:
+                self.current_frame = 3
+                self.image = self.turning_frames[self.current_frame]
+                self.rect.centerx = self.plat.rect.centerx + 17.25
+            elif self.current_frame == 3  and self.descendanim == True:
+                self.current_frame = 2
+                self.image = pg.transform.flip(self.turning_frames[self.current_frame], True, False)
+                self.rect.centerx = self.plat.rect.centerx + 8.5
+            elif self.current_frame == 2  and self.descendanim == True:
+                self.current_frame = 1
+                self.image = pg.transform.flip(self.turning_frames[self.current_frame], True, False)
+                self.rect.centerx = self.plat.rect.centerx + 4.5
+            elif self.current_frame == 1  and self.descendanim == True:
+                self.current_frame = 0
+                self.image = pg.transform.flip(self.turning_frames[self.current_frame], True, False)
+                self.rect.centerx = self.plat.rect.centerx
+            
 class Mob(Sprite):
     def __init__(self, game):
         # allows layering in LayeredUpdates sprite group
@@ -242,9 +263,9 @@ class Mob(Sprite):
         self.groups = game.all_sprites, game.mobs
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image_up = self.game.spritesheet.get_image(566, 510, 122, 139)
+        self.image_up = self.game.spritesheet.get_image(566, 510, 122, 139, 3)
         self.image_up.set_colorkey(BLACK)
-        self.image_down = self.game.spritesheet.get_image(568, 1534, 122, 135)
+        self.image_down = self.game.spritesheet.get_image(568, 1534, 122, 135, 3)
         self.image_down.set_colorkey(BLACK)
         self.image = self.image_up
         self.image.set_colorkey(BLACK)
@@ -273,3 +294,71 @@ class Mob(Sprite):
         self.rect.y += self.vy
         if self.rect.left > WIDTH + 100 or self.rect.right < -100:
             self.kill()
+
+# I made this
+class Mob2(Sprite):
+    def __init__(self, game, plat):
+        # allows layering in LayeredUpdates sprite group
+        self._layer = MOB_LAYER
+        # add a groups property where we can pass all instances of this object into game groups
+        self.groups = game.all_sprites, game.mobs
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        # assigns it to a platform
+        self.plat = plat 
+        self.load_images()
+        self.image = self.walkright[0]
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = self.plat.rect.centerx
+        self.rect.bottom = self.plat.rect.top
+        self.vx = 1
+        self.currentframe = 1
+        self.last_update = 0
+    def update(self):
+        if self.rect.right == self.plat.rect.right:
+            self.vx = -1
+        if self.rect.left == self.plat.rect.left:
+            self.vx = 1
+        self.animate()
+        self.rect.x = self.rect.x + self.vx
+        self.rect.bottom = self.plat.rect.top
+        if self.rect.bottom + 5 >= HEIGHT:
+            self.kill()
+    def animate(self):
+        now = pg.time.get_ticks()
+        if now - self.last_update > 150:
+            self.last_update = now
+            if self.vx == 1:
+                if self.currentframe == 1:
+                    self.currentframe = 0
+                    self.image = self.walkright[self.currentframe]
+                elif self.currentframe == 0:
+                    self.currentframe = 1
+                    self.image = self.walkright[self.currentframe]
+            elif self.vx == -1:
+                if self.currentframe == 1:
+                    self.currentframe = 0
+                    self.image = self.walkleft[self.currentframe]
+                elif self.currentframe == 0:
+                    self.currentframe = 1
+                    self.image = self.walkleft[self.currentframe]
+    def load_images(self):
+        self.walkright = [self.game.spritesheet.get_image(704, 1256, 120, 159, 3),
+                                self.game.spritesheet.get_image(812, 296, 90, 155, 3)
+                                ]
+        for frame in self.walkright:
+            frame.set_colorkey(BLACK)
+        self.walkleft = [pg.transform.flip(self.walkright[0], True, False),
+                                pg.transform.flip(self.walkright[1], True, False)
+                                ]
+        for frame in self.walkleft:
+            frame.set_colorkey(BLACK)
+
+class Icon(Sprite):
+    def __init__(self, imagefile, x, y):
+        self.image = imagefile
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        
