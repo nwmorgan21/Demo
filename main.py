@@ -53,6 +53,8 @@ class Game:
         self.clock = pg.time.Clock()
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
+
+        # Assortment of variables used later on
         self.boostcooldown = 0
         self.bubblecooldown = 0
         self.playerinvincibility = False
@@ -72,8 +74,9 @@ class Game:
         ''' with is a contextual option that handles both opening and closing of files to avoid
         issues with forgetting to close
         '''
+
+        # Opens highscore file to be able to save the highscore
         try:
-            # changed to r to avoid overwriting error
             with open(path.join(self.dir, "highscore.txt"), 'r') as f:
                 self.highscore = int(f.read())
                 print(self.highscore)
@@ -92,6 +95,7 @@ class Game:
                 self.cointcount = 0
                 print("exception")
 
+        # creates an in game variable for the amount coins the player has saved
         if self.coincount < 0:
             self.coincount = 0
 
@@ -103,6 +107,8 @@ class Game:
         except:
             with open(path.join(self.dir, JUMP_BOOST_FILE), 'w') as f:
                 print("exception")
+        
+        # variable for whether or not the player has bought jump boost
         if self.buyjumpboost == 1:
             self.boughtjumpboost = True
         elif self.buyjumpboost == 0:
@@ -117,6 +123,7 @@ class Game:
             with open(path.join(self.dir, BUBBLE_FILE), 'w') as f:
                 print("exception")
         
+        # variable for whether or not the player has bought bubble boost
         if self.buybubble == 1:
             self.boughtbubble = True
         elif self.buybubble == 0:
@@ -131,6 +138,7 @@ class Game:
             with open(path.join(self.dir, PURPLE_FILE), 'w') as f:
                 print("exception")
         
+        # variable for whether or not the player has bought the purple bunny
         if self.buypurple == 1:
             self.boughtpurple = True
         elif self.buypurple == 0:
@@ -150,8 +158,6 @@ class Game:
                             pg.mixer.Sound(path.join(self.snd_dir, 'Jump24.wav'))]
         self.boost_sound = pg.mixer.Sound(path.join(self.snd_dir, 'Jump29.wav'))
         self.coinsound = pg.mixer.Sound(path.join(self.snd_dir, 'coinhit.wav'))
-        # self.pop_sound = pg.mixer.Sound(path.join(self.snd_dir, 'Pop.wav'))
-
 
         # Load Icons
         self.boostimg = self.spritesheet.get_image(820, 1805, 71, 70, 2)
@@ -160,8 +166,7 @@ class Game:
         self.coinicon.set_colorkey(BLACK)
         self.bubbleimg = self.spritesheet.get_image(826, 134, 71, 70, 2)
         self.bubbleimg.set_colorkey(BLACK)
-
-                            
+     
     def new(self):
         # sets score
         self.score = 0
@@ -200,7 +205,6 @@ class Game:
         self.run()
 
     def run(self):
-        # game loop
         # play music
         pg.mixer.music.play(loops=-1)
         # set boolean playing to true
@@ -213,25 +217,26 @@ class Game:
             self.draw()
         pg.mixer.music.fadeout(1000)
     def update(self):
+        # keeps every sprite updating through the game loop
         self.all_sprites.update()
 
         # Makes sure player doesn't stay invincible after jump boost
         if self.player.vel.y > 0:
             self.playerinvincibility = False      
 
-        # Cooldown
+        # Cooldown of boosts
         if self.boostcooldown > 0:
             self.boostcooldown -= 1
         if self.bubblecooldown > 0:
             self.bubblecooldown -= 1
 
-        # shall we spawn a mob?
+        # Spawns a flying mob
         now = pg.time.get_ticks()
         if now - self.mob_timer > 5000 + random.choice([-1000, -500, 0, 500, 1000]):
             self.mob_timer = now
             Mob(self)
 
-        # spawn coin mob
+        # Spawns coin mob
         now = pg.time.get_ticks()
         if now - self.coinmob_timer > 10000 + random.choice([-1000, -500, 0, 500, 1000]):
             self.coinmob_timer = now
@@ -253,7 +258,7 @@ class Game:
             self.coinsound.play()
             m.kill()
 
-        # check for bubble and mob collision
+        # check for bubble and mob collisions by checking if sprites in two different groups collide
         pg.sprite.groupcollide(self.bubbles, self.mobs, True, True)
                        
         # check to see if player can jump - if falling
@@ -300,7 +305,7 @@ class Game:
                     plat.kill()
                     self.score += 10
     
-        # Die!
+        # Kills player if they go beyond the screen limit
         if self.player.rect.bottom > HEIGHT:
             for sprite in self.all_sprites:
                 sprite.rect.y -= max(self.player.vel.y, 10)
@@ -310,7 +315,7 @@ class Game:
         if len(self.platforms) == 0:
             self.playing = False
         # generate new random platforms
-        while len(self.platforms) < 6:
+        while len(self.platforms) < 10:
             width = random.randrange(50, 100)            
             Platform(self, random.randrange(0,WIDTH-width), 
                             random.randrange(-75, -30))
@@ -320,6 +325,7 @@ class Game:
         for i in coin_hits:
             i.kill()
             self.coinsound.play()
+            # limits amount of coins possible to 999 and adds 1 to coin count
             if self.coincount < 999:
                 self.coincount = self.coincount + 1
         
@@ -329,6 +335,7 @@ class Game:
             self.boostcooldown = 0
 
     def events(self):
+        # detects if buttons are pressed in game
         for event in pg.event.get():
                 if event.type == pg.QUIT:
                     if self.playing:
@@ -349,10 +356,11 @@ class Game:
                         self.player.jump_cut()
     
     def draw(self):
+        # Creates a background that changes based on the score of the player
         if self.score < 500:
             self.screen.fill(SKY_BLUE)
         elif self.score < 1000:
-            self.screen.fill(WHITE)
+            self.screen.fill(DARK_GRAY)
         elif self.score < 2000:
             self.screen.fill(LIGHT_PINK)
         if self.score >= 2000:
@@ -395,9 +403,11 @@ class Game:
         if self.boughtjumpboost == 0:
             self.draw_text("1: 200 coins", 22, WHITE, WIDTH/4, HEIGHT/2 + 20)
             self.screen.blit(self.boostimg, (WIDTH/4 - 35, HEIGHT/2 - 60))
+        # Bubble boost display
         if self.boughtbubble == 0:
             self.draw_text("2: 100 coins", 22, WHITE, WIDTH * 3/4, HEIGHT/2 + 20)
             self.screen.blit(self.bubbleimg, (WIDTH * 3/4 - 35, HEIGHT/2 - 60))
+        # Purple bunny display
         if self.boughtpurple == 0:
             self.draw_text("3: 300 coins", 22, WHITE, WIDTH/4, HEIGHT - 40)
             self.screen.blit(self.spritesheet.get_image(584, 0, 121, 201, 4), (WIDTH/4, HEIGHT - 100))
@@ -407,6 +417,7 @@ class Game:
         self.store_wait()
     def store_wait(self):
         storewait = True
+        # keeps waiting for button to be pushed while in store
         while storewait:
             self.clock.tick(FPS)
             for event in pg.event.get():
@@ -488,6 +499,7 @@ class Game:
         self.draw_text("High score " + str(self.highscore), 22, WHITE, WIDTH / 2, HEIGHT/2 + 40)
         self.draw_text("Coins: " + str(self.coincount), 22, WHITE, WIDTH / 2, HEIGHT/2 + 65)
         self.draw_text("Boosts: ", 22, WHITE, 35, HEIGHT * 3/4)
+        # Displays the boosts if they were bought
         if self.boughtjumpboost == True:
             self.screen.blit(self.spritesheet.get_image(820, 1805, 71, 70, 1), (10, HEIGHT - 115))
             self.draw_text("Spacebar", 22, WHITE, 45, HEIGHT-30)
@@ -507,7 +519,7 @@ class Game:
 
         pg.display.flip()
         self.wait_for_key()
-        
+    # Method for drawing text
     def draw_text(self, text, size, color, x, y):
         font = pg.font.Font(self.font_name, size)
         text_surface = font.render(text, True, color)

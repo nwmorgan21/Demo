@@ -4,6 +4,7 @@
 # on acceleration https://www.khanacademy.org/science/physics/one-dimensional-motion/kinematic-formulas/v/average-velocity-for-constant-acceleration 
 # on vectors: https://www.youtube.com/watch?v=ml4NSzCQobk 
 # I used a lot of different aspects of code from Mr. Cozort
+# I got a lot of information from https://www.pygame.org/docs/
 
 
 import pygame as pg
@@ -46,6 +47,7 @@ class Player(Sprite):
         self.acc = vec(0, 0)
         print("adding vecs " + str(self.vel + self.acc))
     def load_images(self):
+        # Loads the player images based on whether or not the player has bought the purple bunny
         if self.game.boughtpurple == False:
             self.standing_frames = [self.game.spritesheet.get_image(690, 406, 120, 201, 3),
                                     self.game.spritesheet.get_image(614, 1063, 120, 191, 3)
@@ -137,6 +139,7 @@ class Player(Sprite):
             self.walking = True
         else:
             self.walking = False
+        # Changes frames of player to imitate animation
         if self.walking:
             if now - self.last_update > 200:
                 self.last_update = now
@@ -168,6 +171,7 @@ class Cloud(Sprite):
         self.groups = game.all_sprites, game.clouds
         Sprite.__init__(self, self.groups)
         self.game = game
+        # Randomly chooses a cloud image to use
         self.image = choice(self.game.cloud_images)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
@@ -194,6 +198,7 @@ class Platform(Sprite):
         self.groups = game.all_sprites, game.platforms
         Sprite.__init__(self, self.groups)
         self.game = game
+        # Changes platform skin based on how high the player score is 
         if game.score < 500:
             images = [self.game.spritesheet.get_image(0, 288, 380, 94, 2), self.game.spritesheet.get_image(213, 1662, 201, 100, 2)]
         elif game.score < 1000:
@@ -437,6 +442,7 @@ class Coinmob(Sprite):
         self.vy = 0
         self.dy = 0.5
     def update(self):
+        # Used Mob() movement system
         self.rect.x += self.vx
         self.vy += self.dy
         self.rect_top = self.rect.top

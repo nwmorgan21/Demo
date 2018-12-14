@@ -10,9 +10,10 @@ BLACK = (0,0,0)
 REDDISH = (240,55,66)
 SKY_BLUE = (143, 185, 252)
 LIGHT_PINK = (255,182,193)
+DARK_GRAY = (169,169,169)
 FONT_NAME = 'arial'
+# Data Files
 SPRITESHEET = "spritesheet_jumper.png"
-# data files
 HS_FILE = "highscore.txt"
 COIN_FILE = "Coins.txt"
 JUMP_BOOST_FILE = "Jump Boost.txt"
@@ -39,14 +40,6 @@ ICON_LAYER = 2
 BUBBLE_LAYER = 2
 
 # platform settings
-''' old platforms from drawing rectangles'''
-'''
-PLATFORM_LIST = [(0, HEIGHT - 40, WIDTH, 40),
-                 (65, HEIGHT - 300, WIDTH-400, 40),
-                 (20, HEIGHT - 350, WIDTH-300, 40),
-                 (200, HEIGHT - 150, WIDTH-350, 40),
-                 (200, HEIGHT - 450, WIDTH-350, 40)]
-'''
 PLATFORM_LIST = [(0, HEIGHT - 40),
                  (65, HEIGHT - 300),
                  (20, HEIGHT - 350),
